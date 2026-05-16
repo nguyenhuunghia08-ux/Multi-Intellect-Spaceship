@@ -102,6 +102,23 @@ export default function App() {
       try {
         const content = await fetchContentFromSheet(gradeUrls);
         setData(content);
+        
+        // Diagnose if all are empty
+        const allEmpty = Object.values(content.grades).every(g => 
+          g.worksheets.length === 0 && g.unitTests.length === 0 && 
+          g.mockExams.length === 0 && g.games.length === 0
+        );
+        
+        if (allEmpty && !isSilent) {
+          setDiagnosticResult({
+            grade: 0,
+            status: 'error',
+            message: "Tín hiệu từ tất cả hành tinh đều rất yếu (Dữ liệu trống). Hãy kiểm tra lại URL hoặc đảm bảo rằng Google Sheet của bạn đã được nhập dữ liệu và Apps Script đã được triển khai chính xác!",
+          });
+        } else if (!allEmpty) {
+          // Clear diagnostic if we have some data
+          setDiagnosticResult(null);
+        }
       } catch (err) {
         console.error("Critical fetch error:", err);
       } finally {
@@ -311,6 +328,8 @@ export default function App() {
     }
   };
 
+  const [pendingGrade, setPendingGrade] = useState<Grade | null>(null);
+
   const handleGradeSelect = (grade: Grade) => {
     setSelectedGrade(grade);
     
@@ -320,7 +339,7 @@ export default function App() {
       return;
     }
     
-    // For students, check if there's content first
+    // Check if data is already available
     const gradeData = data?.grades?.[grade];
     const isEmpty = !gradeData || (
       (!gradeData.worksheets || gradeData.worksheets.length === 0) && 
@@ -330,27 +349,36 @@ export default function App() {
     );
 
     if (isEmpty) {
-      // If data is missing, we try to refresh once before giving up
+      setPendingGrade(grade);
       setRefreshKey(prev => prev + 1);
-      setTimeout(() => {
-        const freshData = data?.grades?.[grade];
-        const stillEmpty = !freshData || (
-          (!freshData.worksheets || freshData.worksheets.length === 0) && 
-          (!freshData.unitTests || freshData.unitTests.length === 0) && 
-          (!freshData.mockExams || freshData.mockExams.length === 0) && 
-          (!freshData.games || freshData.games.length === 0)
-        );
-        if (stillEmpty) {
-          alert("Tín hiệu từ hành tinh này quá yếu hoặc chưa có dữ liệu. Vui lòng kiểm tra lại URL trong Cài đặt!");
-        } else {
-          setView('grade');
-        }
-      }, 2000);
+      // We will handle the navigation in a useEffect after data updates
       return;
     }
     
     setView('grade');
   };
+
+  // Handle navigation after data refresh from handleGradeSelect
+  useEffect(() => {
+    if (pendingGrade && !loading) {
+      const gradeData = data?.grades?.[pendingGrade];
+      const stillEmpty = !gradeData || (
+        (!gradeData.worksheets || gradeData.worksheets.length === 0) && 
+        (!gradeData.unitTests || gradeData.unitTests.length === 0) && 
+        (!gradeData.mockExams || gradeData.mockExams.length === 0) && 
+        (!gradeData.games || gradeData.games.length === 0)
+      );
+
+      if (!stillEmpty) {
+        setView('grade');
+        setPendingGrade(null);
+      } else {
+        // If it's still empty, inform the user and reset pending state
+        alert("Tín hiệu từ hành tinh này quá yếu hoặc chưa có dữ liệu. Vui lòng kiểm tra lại URL trong Cài đặt!");
+        setPendingGrade(null);
+      }
+    }
+  }, [data, loading, pendingGrade]);
 
   const handleModuleSelect = (module: ContentModule) => {
     setSelectedModule(module);
@@ -807,6 +835,28 @@ export default function App() {
                   </h2>
                 </motion.div>
                 <p className="text-slate-400 text-lg font-medium">Chọn phi đội tàu vũ trụ của bé để bắt đầu hành trình nhé</p>
+                
+                {diagnosticResult && diagnosticResult.status === 'error' && (
+                  <motion.div 
+                    initial={{ opacity: 0, h: 0 }}
+                    animate={{ opacity: 1, h: 'auto' }}
+                    className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-left max-w-2xl mx-auto"
+                  >
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="text-red-400 shrink-0" size={20} />
+                      <div>
+                        <p className="text-red-400 font-black uppercase text-[10px] tracking-widest mb-1">Cảnh báo hệ thống (Grade {diagnosticResult.grade})</p>
+                        <p className="text-white text-xs font-bold leading-relaxed">{diagnosticResult.message}</p>
+                        <button 
+                          onClick={() => setView('settings')}
+                          className="mt-3 text-[10px] font-black underline uppercase text-sky-400 hover:text-sky-300 transition-colors"
+                        >
+                          Đi đến trung tâm điều khiển để sửa lỗi
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
                 
                 {/* Floating Decorative Rockets */}
                 <motion.div 
