@@ -463,7 +463,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-900 font-sans text-slate-100 pb-12 relative overflow-hidden">
       {/* Background Stars & Flying Objects Effect */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden h-full z-0">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden h-full">
         <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-white rounded-full animate-pulse opacity-40" />
         <div className="absolute top-1/2 left-3/4 w-1 h-1 bg-white rounded-full animate-pulse delay-75 opacity-30" />
         <div className="absolute top-3/4 left-1/2 w-1 h-1 bg-white rounded-full animate-pulse delay-150 opacity-40" />
@@ -657,7 +657,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className={`relative z-10 ${(view === 'quiz' || view === 'game') ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-4 mt-8 transition-all duration-500`}>
+      <main className={`${(view === 'quiz' || view === 'game') ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-4 mt-8 transition-all duration-500`}>
         <AnimatePresence mode="wait">
           {view === 'login' && (
             <motion.div
