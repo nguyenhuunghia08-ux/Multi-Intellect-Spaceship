@@ -1,0 +1,35 @@
+{
+  "entities": {
+    "AuthSettings": {
+      "title": "Auth Settings",
+      "description": "Stores the class password for login",
+      "type": "object",
+      "properties": {
+        "password": { "type": "string", "description": "The class access password" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last time the password was updated" }
+      },
+      "required": ["password"]
+    },
+    "LoginLog": {
+      "title": "Login Log",
+      "description": "Records student logins",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string", "description": "Name of the student" },
+        "className": { "type": "string", "description": "Class/Grade of the student" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Time of login" }
+      },
+      "required": ["studentName", "className", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/settings/auth": {
+      "schema": "AuthSettings",
+      "description": "Global authentication settings"
+    },
+    "/logs/{loginId}": {
+      "schema": "LoginLog",
+      "description": "History of student logins"
+    }
+  }
+}

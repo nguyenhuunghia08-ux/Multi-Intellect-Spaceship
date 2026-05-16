@@ -1,0 +1,6 @@
+{
+  "name": "Remix: Smart Kid English",
+  "description": "An interactive English learning platform for primary students (Grades 1-5) featuring worksheets, unit tests, mock exams, and educational games, managed via Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definitions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // Hardened admin check
+      return isSignedIn() && 
+             request.auth.token.email == "nguyenhuunghia.08@gmail.com" &&
+             request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Phase 4: Validation Blueprints
+
+    function isValidAuthSettings(data) {
+      // Pillar 2: Strict Keys & Pillar 5: Type Safety
+      return data.keys().hasAll(['password']) &&
+             data.keys().hasOnly(['password', 'updatedAt']) &&
+             data.password is string &&
+             data.password.size() >= 4 &&
+             data.password.size() <= 64 &&
+             (data.get('updatedAt', null) == null || data.updatedAt == request.time);
+    }
+
+    function isValidLoginLog(data) {
+      // Pillar 2: Identity Integrity (note: request.auth is null here, but we validate payload)
+      // Pillar 5: Strict Structure
+      return data.keys().hasAll(['studentName', 'className', 'timestamp']) &&
+             data.keys().size() == 3 &&
+             data.studentName is string &&
+             data.studentName.size() <= 100 &&
+             data.className is string &&
+             data.className.size() <= 50 &&
+             data.timestamp == request.time;
+    }
+
+    // Pillar 8: Secure List Queries & Collection Matching
+    
+    // 1. Settings Collection
+    match /settings/auth {
+      allow get: if true; // Public read for login check
+      // Pillar 4: Tiered Identity (Admin only write)
+      allow write: if isAdmin() && isValidAuthSettings(incoming());
+    }
+
+    // 2. Logs Collection
+    match /logs/{loginId} {
+      // Pillar 3: Path Hardening
+      allow create: if isValidId(loginId) && isValidLoginLog(incoming());
+      // Pillar 6: PII Isolation (Admin read only)
+      allow get, list: if isAdmin();
+      allow update, delete: if false; // Pillar 9: Immutable
+    }
+
+    // Support for connection test
+    match /test/connection {
+      allow get: if true;
+    }
+  }
+}
